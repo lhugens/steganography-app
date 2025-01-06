@@ -53,15 +53,22 @@ function decodeImage($image) {
         }
     }
 
+    // Find position of the end marker
+    $pos = strpos($binText, '1111111111111110');
+    if ($pos !== false) {
+        $binText = substr($binText, 0, $pos);  // Trim up to the marker
+    }
+
     $chunks = str_split($binText, 8);
     $text = '';
     foreach ($chunks as $chunk) {
-        if ($chunk == '11111110') break;
         $text .= chr(bindec($chunk));
     }
+    
     imagedestroy($img);
     return $text;
 }
+
 
 $decodedMessage = '';
 $scrollToMessage = false;
