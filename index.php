@@ -1,8 +1,10 @@
 <?php
+$successMessage = '';
+
 if (isset($_POST['encode'])) {
     $image = $_FILES['image']['tmp_name'];
     $text = $_POST['text'];
-    encodeImage($image, $text);
+    $successMessage = encodeImage($image, $text);
 } elseif (isset($_POST['decode'])) {
     $image = $_FILES['image']['tmp_name'];
     $decodedMessage = decodeImage($image);
@@ -36,7 +38,7 @@ function encodeImage($image, $text) {
     }
     imagepng($img, 'encoded.png');
     imagedestroy($img);
-    echo 'Image encoded successfully.';
+    return 'Image encoded successfully.';
 }
 
 function decodeImage($image) {
@@ -69,13 +71,18 @@ function decodeImage($image) {
     return $text;
 }
 
-
 $decodedMessage = '';
 $scrollToMessage = false;
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['decode'])) {
-    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-        $decodedMessage = decodeImage($_FILES['image']['tmp_name']);
-        $scrollToMessage = true;
+$scrollToSuccessMessage = false;
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['decode'])) {
+        if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
+            $decodedMessage = decodeImage($_FILES['image']['tmp_name']);
+            $scrollToMessage = true;
+        }
+    } elseif (isset($_POST['encode']) && $successMessage) {
+        $scrollToSuccessMessage = true;
     }
 }
 ?>
@@ -90,6 +97,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['decode'])) {
             const messageDiv = document.getElementById('decoded-message');
             if (messageDiv) {
                 messageDiv.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function scrollToSuccessMessage() {
+            const successMessageDiv = document.getElementById('success-message');
+            if (successMessageDiv) {
+                successMessageDiv.scrollIntoView({ behavior: 'smooth' });
             }
         }
     </script>
@@ -109,6 +123,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['decode'])) {
             <button type="submit" name="encode">Encode Text</button>
             <button type="submit" name="decode">Decode Text</button>
         </form>
+
+        <?php if ($successMessage): ?>
+            <div id="success-message" class="success-message">
+                <h2><?php echo htmlspecialchars($successMessage); ?></h2>
+            </div>
+            <script>
+                scrollToSuccessMessage();
+            </script>
+        <?php endif; ?>
 
         <?php if ($decodedMessage): ?>
             <div id="decoded-message" class="decoded-message">
