@@ -1,10 +1,14 @@
 <?php
 $successMessage = '';
+$encodedImagePath = '';
+$decodedMessage = '';
 
 if (isset($_POST['encode'])) {
     $image = $_FILES['image']['tmp_name'];
     $text = $_POST['text'];
-    $successMessage = encodeImage($image, $text);
+    $result = encodeImage($image, $text);
+    $successMessage = $result['message'];
+    $encodedImagePath = $result['path'];
 } elseif (isset($_POST['decode'])) {
     $image = $_FILES['image']['tmp_name'];
     $decodedMessage = decodeImage($image);
@@ -36,9 +40,14 @@ function encodeImage($image, $text) {
             imagesetpixel($img, $x, $y, $newColor);
         }
     }
-    imagepng($img, 'encoded.png');
+
+    // Save the encoded image to a temporary file
+    $encodedImagePath = 'encoded_' . uniqid() . '.png';
+    imagepng($img, $encodedImagePath);
     imagedestroy($img);
-    return 'Image encoded successfully.';
+
+    // Return success message and path to the encoded image
+    return ['message' => 'Image encoded successfully.', 'path' => $encodedImagePath];
 }
 
 function decodeImage($image) {
@@ -66,50 +75,35 @@ function decodeImage($image) {
     foreach ($chunks as $chunk) {
         $text .= chr(bindec($chunk));
     }
-    
+
     imagedestroy($img);
     return $text;
 }
-
-$decodedMessage = '';
-$scrollToMessage = false;
-$scrollToSuccessMessage = false;
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['decode'])) {
-        if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-            $decodedMessage = decodeImage($_FILES['image']['tmp_name']);
-            $scrollToMessage = true;
-        }
-    } elseif (isset($_POST['encode']) && $successMessage) {
-        $scrollToSuccessMessage = true;
-    }
-}
 ?>
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Steganography Web App</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" href="style.css">
     <script>
-        function scrollToMessage() {
-            const messageDiv = document.getElementById('decoded-message');
-            if (messageDiv) {
-                messageDiv.scrollIntoView({ behavior: 'smooth' });
-            }
-        }
-
         function scrollToSuccessMessage() {
             const successMessageDiv = document.getElementById('success-message');
             if (successMessageDiv) {
                 successMessageDiv.scrollIntoView({ behavior: 'smooth' });
             }
         }
+
+        function scrollToMessage() {
+            const messageDiv = document.getElementById('decoded-message');
+            if (messageDiv) {
+                messageDiv.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
     </script>
 </head>
 <body>
-   
     <div class="main-container">
         <h1>Image Steganography</h1>
 
@@ -127,6 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <?php if ($successMessage): ?>
             <div id="success-message" class="success-message">
                 <h2><?php echo htmlspecialchars($successMessage); ?></h2>
+                <p><a href="<?php echo htmlspecialchars($encodedImagePath); ?>" download>Click here to download the encoded image.</a></p>
             </div>
             <script>
                 scrollToSuccessMessage();
